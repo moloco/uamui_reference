@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { forbidExtraProps } from 'airbnb-prop-types';
 
@@ -9,34 +9,70 @@ import TextRow from '../ui/TextRow';
 import Button from '../ui/Button';
 import ButtonGroup from '../ui/ButtonGroup';
 
-const propTypes = forbidExtraProps({});
+import { resources } from '../metadata';
+import Renderer from '../Renderer';
 
-const defaultProps = {};
+const propTypes = forbidExtraProps({
+  resource: PropTypes.oneOf(Object.keys(resources)),
+  entity: PropTypes.object,
+});
 
-function DetailView(props) {
+const defaultProps = {
+  resource: 'base',
+  entity: {},
+};
+
+const { fields: baseFields, detail: baseLayout } = resources.base;
+
+function DetailView({ resource, entity }) {
+  const components = useMemo(() => {
+    const { detail, fields = {} } = resources[resource] || {};
+    const { layout = [] } = detail || baseLayout || {};
+
+    return layout
+      .map((row) =>
+        row.map((name) => ({
+          type: 'text',
+          name,
+          ...baseFields[name],
+          ...fields[name],
+        })),
+      )
+      .map((row) =>
+        row.map((field) => ({
+          ...field,
+          ...baseFields.types[field.type],
+          ...(fields.types && fields.types[field.type]),
+        })),
+      )
+      .map((row) => ({
+        type: 'ColumnRow',
+        components: row.map(({ name, label, componentMap }) => ({
+          type: 'Column',
+          components: [
+            {
+              id: `${resource}_${name}`,
+              type: componentMap.detail,
+              label,
+              title: entity[name],
+            },
+          ],
+        })),
+      }));
+  }, [resource]);
+
   return (
     <React.Fragment>
       <Heading size={700}>Products</Heading>
       <br />
       <Card elevation={2} background="white" border="default">
-        <ColumnRow>
-          <Column>
-            <TextRow label="Name" title="Advertiser one" />
-          </Column>
-        </ColumnRow>
-        <ColumnRow>
-          <Column>
-            <TextRow label="Title" title="Sr. Program Manager" />
-          </Column>
-          <Column>
-            <TextRow label="Timezone" title="PST" />
-          </Column>
-        </ColumnRow>
+        <Renderer components={components} />
         <ButtonGroup large>
           <Button primary>Apply</Button>
           <Button secondary>Cancel</Button>
         </ButtonGroup>
       </Card>
+      <br />
     </React.Fragment>
   );
 }

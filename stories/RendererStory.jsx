@@ -24,7 +24,7 @@ export default {
                       type: 'TextRow',
                       label: 'name',
                       title: 'Column1',
-                    }
+                    },
                   ],
                 },
                 {
@@ -34,9 +34,9 @@ export default {
                       type: 'TextRow',
                       label: 'name',
                       title: 'Column2',
-                    }
+                    },
                   ],
-                }
+                },
               ],
             },
           ]}

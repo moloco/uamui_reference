@@ -15,11 +15,13 @@ class App extends React.PureComponent {
   }
 
   render() {
+    const entity = { name: 'SK Telecom', description: 'Some description', timezone: 'PST' };
+
     return (
       <Provider store={this.store}>
         <NotificationContainer />
         <PageLayout>
-          <DetailView />
+          <DetailView resource="advertisers" entity={entity} />
           <br />
           <ListContainer resource="advertisers" />
         </PageLayout>
