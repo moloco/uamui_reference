@@ -1,0 +1,49 @@
+{
+  "name": "moloco-ads",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "airbnb-prop-types": "^2.13.2",
+    "aphrodite": "^2.3.1",
+    "axios": "^0.18.0",
+    "evergreen-ui": "^4.15.0",
+    "i18next": "^15.1.0",
+    "prop-types": "^15.7.2",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "react-i18next": "^10.9.0",
+    "react-redux": "7.1.0-rc.1",
+    "react-router": "^5.0.0",
+    "react-router-dom": "^5.0.0",
+    "react-scripts": "0.9.x",
+    "react-with-styles": "^3.2.1",
+    "react-with-styles-interface-aphrodite": "^5.0.1",
+    "redux": "^4.0.1",
+    "redux-devtools-extension": "^2.13.8",
+    "redux-pack": "^0.1.5",
+    "redux-thunk": "^2.3.0",
+    "reselect": "^4.0.0",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.4.5",
+    "@storybook/react": "^5.0.11",
+    "babel-loader": "^8.0.6",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb": "17.1.0",
+    "eslint-config-prettier": "^4.2.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-jsx-a11y": "^6.1.1",
+    "eslint-plugin-prettier": "^3.1.0",
+    "eslint-plugin-react": "^7.11.0",
+    "prettier": "^1.17.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject",
+    "storybook": "start-storybook",
+    "mockserver": "json-server --watch --delay 500 --port 4000 db.json"
+  }
+}

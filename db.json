@@ -1,0 +1,16 @@
+{
+  "advertisers": [
+    {
+      "id": 1,
+      "name": "Advertiser1",
+      "description": "description one",
+      "timezone": "PST"
+    },
+    {
+      "id": 2,
+      "name": "Advertiser2",
+      "description": "description two",
+      "timezone": "KST"
+    }
+  ]
+}
