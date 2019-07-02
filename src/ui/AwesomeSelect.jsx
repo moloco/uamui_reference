@@ -209,7 +209,7 @@ function AwesomeSelect({
         inputValue: inputValue2,
         selectedItem: selectedItem2,
       }) => {
-        const { onBlur, onFocus, ...inputProps } = getInputProps({
+        const { onBlur, onFocus } = getInputProps({
           onFocus: handleFocus,
         });
         const selectedEntries = Object.entries(selectedItem2);
@@ -305,7 +305,6 @@ function AwesomeSelect({
                           handleInputChange(event);
                           onChange(event);
                         }}
-                        {...inputProps}
                       />
                       <SearchIcon className={styles.searchIcon} />
                     </div>
