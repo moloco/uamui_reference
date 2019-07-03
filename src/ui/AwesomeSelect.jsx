@@ -308,7 +308,7 @@ function AwesomeSelect({
                       />
                       <SearchIcon className={styles.searchIcon} />
                     </div>
-                    <div className={styles.selectAllContainer}>
+                    <div className={styles.selectAllContainer} id="select_all_option">
                       <FormControlLabel
                         control={
                           <Checkbox

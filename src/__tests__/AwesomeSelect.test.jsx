@@ -6,6 +6,7 @@ import Chip from '@material-ui/core/Chip';
 import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Button from '@material-ui/core/Button';
+import InputBase from '@material-ui/core/InputBase';
 
 import AwesomeSelect from '../ui/AwesomeSelect';
 
@@ -29,6 +30,7 @@ describe('<AwesomeSelect>', () => {
   });
 
   describe('on mount', () => {
+    let mountWrapper;
     describe('Chip for adding options', () => {
       it('renders Chip component that controls the Paper dropdown', () => {
         const wrapper = mount(<AwesomeSelect />);
@@ -59,9 +61,9 @@ describe('<AwesomeSelect>', () => {
       let paper;
 
       beforeEach(() => {
-        const wrapper = mount(<AwesomeSelect options={mockOptions} />);
-        wrapper.find(Chip).simulate('click');
-        paper = wrapper.find(Paper);
+        mountWrapper = mount(<AwesomeSelect options={mockOptions} />);
+        mountWrapper.find(Chip).simulate('click');
+        paper = mountWrapper.find(Paper);
       });
 
       it('renders suggestion list by its label', () => {
@@ -76,6 +78,54 @@ describe('<AwesomeSelect>', () => {
 
       it('renders catalog buttons ', () => {
         expect(paper.find('#catalog_buttons').find(Button)).toHaveLength(26);
+      });
+
+      describe('#Select All', () => {
+        it('dispatches onChange with all option values', () => {
+          const onChangeStub = jest.fn();
+          const wrapper = mount(<AwesomeSelect options={mockOptions} onChange={onChangeStub} />);
+          expect(onChangeStub).not.toBeCalled();
+          wrapper.find(Chip).simulate('click');
+          wrapper
+            .find('#select_all_option')
+            .find(FormControlLabel)
+            .simulate('click', { target: { checked: true } });
+          expect(onChangeStub).toBeCalledWith(mockOptions.map(({ value }) => value));
+        });
+      });
+
+      describe('#Search', () => {
+        it('filters the options by search input', () => {
+          const input = paper.find(InputBase).find('input');
+          expect(input.length).toEqual(1);
+          input.simulate('change', { target: { value: 'o' } });
+          mountWrapper.find(Chip).simulate('click');
+          paper = mountWrapper.find(Paper);
+          expect(
+            paper
+              .find(FormGroup)
+              .find(FormControlLabel)
+              .map((comp) => comp.prop('label')),
+          ).toEqual(['Option A', 'Option B']);
+        });
+
+        describe('#Select All', () => {
+          it('dispatches onChange with filtered option values', () => {
+            const onChangeStub = jest.fn();
+            const wrapper = mount(<AwesomeSelect options={mockOptions} onChange={onChangeStub} />);
+            wrapper.find(Chip).simulate('click');
+            const input = wrapper
+              .find(Paper)
+              .find(InputBase)
+              .find('input');
+            input.simulate('change', { target: { value: 'o' } });
+            wrapper
+              .find('#select_all_option')
+              .find(FormControlLabel)
+              .simulate('click', { target: { checked: true } });
+            expect(onChangeStub).toBeCalledWith(['A', 'B']);
+          });
+        });
       });
     });
 
