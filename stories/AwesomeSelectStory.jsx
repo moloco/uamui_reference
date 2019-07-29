@@ -1,4 +1,6 @@
 import React from 'react';
+import faker from 'faker';
+
 import AwesomeSelect from '../src/ui/AwesomeSelect';
 
 const options = [
@@ -47,6 +49,13 @@ const options = [
     value: 'USA',
   },
 ];
+
+const bigOptions = Array(2000)
+  .fill('')
+  .map((_, index) => ({
+    label: faker.name.findName(),
+    value: `${index}`,
+  }));
 
 const unsortedOptions = [...options.slice(5), ...options.slice(0, 5)];
 
@@ -121,6 +130,12 @@ export default {
           placeholder="Select countries..."
           disableCatalog
         />
+      ),
+    },
+    {
+      label: 'Big size',
+      render: () => (
+        <AwesomeSelect options={bigOptions} label="Users" max={5} placeholder="Select users..." />
       ),
     },
   ],

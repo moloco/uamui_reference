@@ -1,7 +1,8 @@
-import React, { useState, useRef, useMemo, useCallback, useEffect, createRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import fromentries from 'fromentries';
 import { forbidExtraProps } from 'airbnb-prop-types';
+import { FixedSizeList } from 'react-window';
 import { makeStyles } from '@material-ui/core/styles';
 import Downshift from 'downshift';
 import TextField from '@material-ui/core/TextField';
@@ -9,13 +10,14 @@ import Paper from '@material-ui/core/Paper';
 import Chip from '@material-ui/core/Chip';
 import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Typography from '@material-ui/core/Typography';
 import Checkbox from '@material-ui/core/Checkbox';
 import InputBase from '@material-ui/core/InputBase';
 import Button from '@material-ui/core/Button';
 import SearchIcon from '@material-ui/icons/Search';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
+
+import AwesomeSelectItem from './AwesomeSelectItem';
 
 const propTypes = forbidExtraProps({
   closeButtonLabel: PropTypes.string,
@@ -117,23 +119,16 @@ function AwesomeSelect({
   const [inputValue, setInputValue] = useState('');
   const [selectedItem, setSelectedItem] = useState(initInputValue);
   const [showDropdown, setShowDropdown] = useState(false);
+  const closeDropdown = useCallback(() => {
+    setShowDropdown(false);
+    setInputValue('');
+  }, []);
   const searchOptions = useMemo(() => getMatchedSuggestions(sortedOptions, inputValue), [
     sortedOptions,
     inputValue,
   ]);
-
   const inputRef = useRef();
-  const scrollRef = useRef();
-  const indexRefs = useMemo(
-    () =>
-      fromentries(Object.keys(getSuggestions(sortedOptions)).map((index) => [index, createRef()])),
-    [sortedOptions],
-  );
-  useEffect(() => {
-    if (selectedItem !== initInputValue) {
-      onChange(Object.keys(selectedItem));
-    }
-  }, [selectedItem]);
+  const indexRef = useRef();
 
   const handleInputChange = useCallback(({ target }) => setInputValue(target.value), []);
   const handleChange = useCallback(
@@ -143,7 +138,6 @@ function AwesomeSelect({
         ...otherSelectedItem,
         ...(!prevItem && { [itemValue]: itemLabel }),
       };
-      setInputValue('');
       setSelectedItem(newSelectedItem);
     },
     [selectedItem],
@@ -151,6 +145,7 @@ function AwesomeSelect({
 
   const handleDelete = (updatedEntries = []) => {
     setSelectedItem(fromentries(updatedEntries));
+    setInputValue('');
   };
 
   const handleFocus = () => {
@@ -161,23 +156,52 @@ function AwesomeSelect({
     }
   };
 
-  const handleIndexPress = useCallback((selectedIndex) => {
-    const refEntries = Object.entries(indexRefs);
-    const [scrollTop] = refEntries.reduce(
-      ([top, prevTop], [indexChar, { current }]) => {
-        if (selectedIndex === indexChar) {
-          return [current.offsetTop, current.offsetTop];
-        }
-        if (selectedIndex > indexChar) {
-          return [top, current.offsetTop];
-        }
-        const midTop = top !== prevTop ? (prevTop + current.offsetTop) / 2 : prevTop;
-        return [midTop, midTop];
-      },
-      [refEntries[refEntries.length - 1][1].current.offsetTop],
-    );
-    scrollRef.current.scrollTop = scrollTop;
-  });
+  const [optionItems, indexCharItems] = useMemo(
+    () =>
+      Object.entries(getSuggestions(sortedOptions, inputValue)).reduce(
+        ([suggestOptions, indexItems], [indexChar, suggestion]) => {
+          if (!disableCatalog) {
+            // eslint-disable-next-line no-param-reassign
+            indexItems[indexChar] = suggestOptions.length;
+            suggestOptions.push({ indexChar });
+          }
+          suggestOptions.splice(
+            suggestOptions.length,
+            0,
+            ...suggestion.map(([suggestionLabel, suggestionValue]) => ({
+              checked: Boolean(selectedItem[suggestionValue]),
+              suggestionLabel,
+              suggestionValue,
+            })),
+          );
+          return [suggestOptions, indexItems];
+        },
+        [[], {}],
+      ),
+    [inputValue, disableCatalog, selectedItem],
+  );
+
+  const handleIndexPress = useCallback(
+    (selectedIndex) => {
+      const refEntries = Object.entries(indexCharItems);
+      const [scrollTop] = refEntries.reduce(
+        ([top, prevTop], [indexChar, currentTop]) => {
+          if (selectedIndex === indexChar) {
+            return [currentTop, currentTop];
+          }
+          if (selectedIndex > indexChar) {
+            return [top, currentTop];
+          }
+          const midTop = top !== prevTop ? Math.floor((prevTop + currentTop) / 2) : prevTop;
+
+          return [midTop, midTop];
+        },
+        [refEntries[refEntries.length - 1][1], 0],
+      );
+      indexRef.current.scrollToItem(scrollTop, 'start');
+    },
+    [indexCharItems],
+  );
 
   const handleSelectAll = ({ target }) => {
     const selections = target.checked
@@ -192,23 +216,23 @@ function AwesomeSelect({
     setSelectedItem(selections);
   };
 
+  useEffect(() => {
+    if (selectedItem !== initInputValue) {
+      onChange(Object.keys(selectedItem));
+    }
+  }, [selectedItem]);
+
   return (
     <Downshift
       id={id}
       inputValue={inputValue}
       onChange={handleChange}
-      onOuterClick={() => setShowDropdown(false)}
+      onOuterClick={closeDropdown}
       selectedItem={selectedItem}
       isOpen={showDropdown}
       itemToString={(object) => Object.keys(object)[0]}
     >
-      {({
-        getInputProps,
-        getItemProps,
-        isOpen,
-        inputValue: inputValue2,
-        selectedItem: selectedItem2,
-      }) => {
+      {({ getInputProps, getItemProps, isOpen, selectedItem: selectedItem2 }) => {
         const { onBlur, onFocus } = getInputProps({
           onFocus: handleFocus,
         });
@@ -305,6 +329,7 @@ function AwesomeSelect({
                           handleInputChange(event);
                           onChange(event);
                         }}
+                        value={inputValue}
                       />
                       <SearchIcon className={styles.searchIcon} />
                     </div>
@@ -331,44 +356,37 @@ function AwesomeSelect({
                       </Button>
                     </div>
                   </div>
-                  <div className={styles.optionContainer} ref={scrollRef}>
+                  <div className={styles.optionContainer}>
                     <FormGroup>
-                      {Object.entries(getSuggestions(sortedOptions, inputValue2)).map(
-                        ([indexChar, suggestion]) => (
-                          <React.Fragment key={`suggestion_index_${indexChar}`}>
-                            <div ref={indexRefs[indexChar]} />
-                            {!disableCatalog && (
-                              <div className={styles.indexHeaderContainer}>
-                                <Typography variant="subtitle1" className={styles.indexHeader}>
-                                  {indexChar}
-                                </Typography>
-                              </div>
-                            )}
-                            {suggestion.map(([suggestionLabel, suggestionValue]) => (
-                              <FormControlLabel
-                                key={`suggestion_${suggestionLabel}`}
-                                control={
-                                  <Checkbox
-                                    {...getItemProps({ item: [suggestionLabel, suggestionValue] })}
-                                    color="primary"
-                                    checked={Boolean(selectedItem2[suggestionValue])}
-                                    value={suggestionValue || suggestionLabel}
-                                  />
-                                }
-                                label={suggestionLabel}
-                                className={styles.optionItems}
-                              />
-                            ))}
-                          </React.Fragment>
-                        ),
-                      )}
+                      <FixedSizeList
+                        width="100%"
+                        height={350}
+                        itemSize={42}
+                        itemCount={optionItems.length}
+                        ref={indexRef}
+                      >
+                        {({ index, style }) => (
+                          <div style={style}>
+                            <AwesomeSelectItem
+                              {...optionItems[index]}
+                              {...!optionItems[index].indexChar &&
+                                getItemProps({
+                                  item: [
+                                    optionItems[index].suggestionLabel,
+                                    optionItems[index].suggestionValue,
+                                  ],
+                                })}
+                            />
+                          </div>
+                        )}
+                      </FixedSizeList>
                     </FormGroup>
                   </div>
                   <div className={styles.resetButton}>
                     <Button
                       aria-label={closeButtonLabel}
                       color="primary"
-                      onClick={() => setShowDropdown(false)}
+                      onClick={closeDropdown}
                       fullWidth
                       disableRipple
                       autoCapitalize="none"
@@ -438,6 +456,7 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'column',
     position: 'relative',
     justifyContent: 'space-between',
+    height: 350 + 100 + 54,
   },
   searchInputContainer: {
     margin: theme.spacing(1, 1.5, 0),
@@ -474,28 +493,13 @@ const useStyles = makeStyles((theme) => ({
   optionContainer: {
     position: 'absolute',
     top: 100,
-    height: `calc(100% - ${100 + 54}px)`,
     width: '100%',
     borderTop: `1px ${theme.palette.grey['400']} solid`,
     overflow: 'auto',
   },
-  optionItems: {
-    padding: theme.spacing(0, 1.5),
-  },
   resetButton: {
     borderTop: `1px ${theme.palette.grey['400']} solid`,
     padding: theme.spacing(1),
-  },
-  indexHeader: {
-    margin: theme.spacing(0, 1.5),
-    borderBottom: `1px ${theme.palette.grey['200']} solid`,
-  },
-  indexHeaderContainer: {
-    top: 0,
-    position: 'sticky',
-    zIndex: 99,
-    backgroundColor: theme.palette.common.white,
-    padding: theme.spacing(1, 0, 0),
   },
 }));
 
